@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UPTIME — Truyền thuyết VéXịn</title>
+<style>
+/*FONTS*/
+:root{
+  --black:#000; --white:#fcfcfc; --gold:#fcd34d; --gold-dk:#c27c0e; --hurt:#f8d878; --crit:#f87858; --good:#9cf07c;
+  --dim:#a8a8a8; --grass:#2f8a2a; --road:#c8a060;
+  --font:'VT323',monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#000;color:var(--white);font-family:var(--font);font-size:22px;line-height:1.3;-webkit-font-smoothing:none}
+::selection{background:var(--gold);color:#000}
+button{font-family:inherit;font-size:inherit;color:inherit;background:none;border:none;padding:0;cursor:pointer;text-align:left}
+:focus-visible{outline:2px dashed var(--gold);outline-offset:3px}
+.hidden{display:none!important}
+::-webkit-scrollbar{width:12px;height:12px} ::-webkit-scrollbar-track{background:#000} ::-webkit-scrollbar-thumb{background:#fff;border:4px solid #000}
+
+/* Cửa sổ Dragon Quest: nền đen, viền trắng bo góc, vành đen bên ngoài */
+.win{background:#000;border:3px solid var(--white);border-radius:7px;box-shadow:0 0 0 3px #000;padding:10px 16px;
+  text-shadow:1px 0 0 currentColor}
+.win .ttl{display:inline-block;color:var(--white);margin:-22px 0 2px -4px;padding:0 6px;background:#000;font-size:20px;position:relative;top:-6px}
+canvas.spr{image-rendering:pixelated;display:inline-block;vertical-align:middle}
+.y{color:var(--gold)} .hurt{color:var(--hurt)} .crit{color:var(--crit)} .good{color:var(--good)} .dim{color:var(--dim)}
+
+/* Lệnh (command) với con trỏ ▶ */
+.cmd{position:relative;padding:1px 0 1px 26px;white-space:nowrap;text-shadow:1px 0 0 currentColor}
+.cmd::before{content:"";position:absolute;left:4px;top:50%;width:12px;height:14px;margin-top:-7px;background:var(--cur) no-repeat center/contain;image-rendering:pixelated;opacity:0}
+.cmd:hover::before,.cmd:focus-visible::before,.cmd.on::before{opacity:1;animation:blink 1s steps(1) infinite}
+.cmd:focus-visible{outline:none}
+.cmd:disabled{color:#5c5c5c;cursor:not-allowed}
+.cmd:disabled::before{display:none}
+.cmd.main{color:var(--gold)}
+@keyframes blink{50%{opacity:0}}
+
+/* ---------- TITLE / MENU ---------- */
+#menu{position:fixed;inset:0;overflow:auto;background:#000}
+.mwrap{max-width:820px;margin:0 auto;padding:56px 24px 64px}
+.logo{font-size:clamp(88px,15vw,150px);line-height:.85;margin:0;color:var(--gold);letter-spacing:.02em;text-align:center;
+  text-shadow:3px 0 0 var(--gold),3px 3px 0 var(--gold-dk),6px 6px 0 #6a3800}
+.subtitle{text-align:center;font-size:30px;margin:14px 0 36px;text-shadow:1px 0 0 currentColor}
+.prologue{font-size:23px;line-height:1.35}
+.prologue b{color:var(--gold);font-weight:400}
+.log{margin-top:40px}
+.log .row{display:flex;align-items:center;justify-content:space-between;width:100%;gap:12px;padding:6px 0 6px 26px;font-size:25px}
+.log .row .ch{color:var(--dim);margin-right:10px}
+.log .row .stars{display:flex;gap:4px;flex:0 0 auto}
+.log .row .desc{display:block;font-size:19px;color:var(--dim);white-space:normal;line-height:1.15}
+
+/* ---------- GAME ---------- */
+#game{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr auto;background:#000}
+#hud{display:flex;align-items:center;gap:22px;margin:10px 10px 8px;flex-wrap:wrap;padding:8px 16px}
+.stat{white-space:nowrap}
+.stat .k{color:var(--dim);margin-right:6px}
+.stat.big{font-size:32px}
+.hsp{flex:1}
+.cmds{display:flex;gap:6px 10px;flex-wrap:wrap}
+#prog{height:4px;background:#333;margin:0 13px}
+#prog i{display:block;height:100%;width:0;background:var(--gold)}
+#stage{position:relative;overflow:hidden;margin:0 10px;border:3px solid #fff;border-radius:7px;
+  background:var(--grass) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16' fill='%232f8a2a'/%3E%3Cg fill='%23226d1f'%3E%3Crect x='2' y='4' width='1' height='2'/%3E%3Crect x='3' y='3' width='1' height='2'/%3E%3Crect x='4' y='4' width='1' height='2'/%3E%3Crect x='10' y='11' width='1' height='2'/%3E%3Crect x='11' y='10' width='1' height='2'/%3E%3Crect x='12' y='11' width='1' height='2'/%3E%3C/g%3E%3Cg fill='%2352b13a'%3E%3Crect x='13' y='3' width='1' height='1'/%3E%3Crect x='6' y='13' width='1' height='1'/%3E%3C/g%3E%3C/svg%3E") 0 0/32px 32px;
+  image-rendering:pixelated}
+#cv{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+.panel{position:absolute;font-size:20px;line-height:1.2}
+#goals{left:14px;top:22px;width:250px}
+.goal{display:flex;justify-content:space-between;gap:8px}
+#chartBox{right:14px;top:22px;width:262px}
+#chart{width:100%;height:80px;display:block;image-rendering:pixelated}
+.legend{display:flex;gap:12px;font-size:17px;color:var(--dim)}
+.legend i{display:inline-block;width:12px;height:4px;margin-right:4px;vertical-align:middle}
+#insp{left:14px;bottom:16px;width:280px}
+#insp .row{display:flex;justify-content:space-between}
+#insp p{margin:6px 0 4px;font-size:18px;line-height:1.15;color:var(--dim);text-shadow:none}
+#sandboxCtl label{display:block;font-size:19px;margin-top:4px}
+#sandboxCtl input{width:100%;accent-color:#fff}
+
+#toasts{position:absolute;left:50%;top:18px;transform:translateX(-50%);display:flex;flex-direction:column;gap:10px;align-items:stretch;pointer-events:none;z-index:5;width:min(560px,56%)}
+.toast{padding:8px 16px;font-size:22px;line-height:1.2}
+.toast.bad{color:var(--crit)} .toast.info{color:var(--good)}
+
+#tray{display:flex;gap:4px 18px;margin:12px 10px 10px;padding:8px 16px;align-items:center;flex-wrap:nowrap;overflow-x:auto}
+#tray .lbl{color:var(--dim);white-space:nowrap;margin-right:6px}
+.item{display:flex;align-items:center;gap:8px;padding:2px 4px 2px 26px;user-select:none;touch-action:none;cursor:grab;white-space:nowrap;position:relative}
+.item::before{content:"";position:absolute;left:4px;top:50%;width:12px;height:14px;margin-top:-7px;background:var(--cur) no-repeat center/contain;image-rendering:pixelated;opacity:0}
+.item:hover::before{opacity:1;animation:blink 1s steps(1) infinite}
+.item .g{color:var(--gold)}
+.item.na{color:#5c5c5c;cursor:not-allowed} .item.na .g{color:#5c5c5c}
+#tray .tip{margin-left:auto;color:var(--dim);white-space:nowrap;font-size:19px}
+
+/* ---------- MESSAGE WINDOW ---------- */
+#dlg{position:fixed;inset:0;display:flex;align-items:flex-end;justify-content:center;padding:24px;background:rgba(0,0,0,.45);z-index:20}
+.msg{width:min(820px,100%);min-height:190px;padding:18px 26px 34px;position:relative;cursor:pointer}
+.msg .who{color:var(--gold);font-size:22px;margin-bottom:4px}
+.dtext{font-size:27px;line-height:1.35}
+.dtext b{color:var(--gold);font-weight:400}
+.dtext em{color:var(--hurt);font-style:normal}
+.dtext .ink{color:inherit}
+.more{position:absolute;left:50%;bottom:10px;width:14px;height:8px;margin-left:-7px;background:var(--down) no-repeat center/contain;image-rendering:pixelated;animation:blink .8s steps(1) infinite}
+.dfoot{position:absolute;right:20px;bottom:8px;font-size:18px;color:var(--dim);text-shadow:none}
+
+#result{position:fixed;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.6);z-index:25;padding:20px}
+.rwin{width:min(540px,100%);padding:18px 24px}
+.rwin h2{font-size:38px;line-height:1;margin:2px 0 10px;font-weight:400;color:var(--gold);text-shadow:2px 0 0 currentColor}
+.rwin .line{display:flex;justify-content:space-between;gap:12px;font-size:22px}
+.rwin .why{font-size:19px;line-height:1.2;color:var(--dim);margin-top:10px;text-shadow:none}
+.rstars{display:flex;gap:8px;margin:6px 0 12px;align-items:center}
+.ract{display:flex;gap:6px 18px;margin-top:14px;flex-wrap:wrap}
+
+@media (max-width:820px){
+  html,body{font-size:19px}
+  #hud{gap:10px;padding:6px 10px;margin:6px 6px 6px} .stat.big{font-size:24px} .stat .k{margin-right:3px}
+  .hsp{display:none} #lvTitle{display:none}
+  #stage{margin:0 6px}
+  #chartBox{display:none}
+  #goals .goal,#goals .ttl{display:none} #goals:not(:has(#sandboxCtl)){display:none} #goals{width:200px}
+  #insp{left:8px;right:8px;width:auto} #insp p{display:none}
+  #toasts{width:92%} .toast{font-size:19px}
+  #tray{margin:8px 6px 6px}
+  .msg{padding:14px 18px 30px} .dtext{font-size:23px}
+}
+@media (prefers-reduced-motion:reduce){ .cmd::before,.item::before,.more{animation:none} }
+</style>
+</head>
+<body>
+
+<div id="menu">
+  <div class="mwrap">
+    <h1 class="logo">UPTIME</h1>
+    <div class="subtitle">Truyền thuyết VéXịn</div>
+    <div class="win prologue">
+      Năm 2026. Bạn vừa nhận offer làm <b>dev đầu tiên</b> của <b>VéXịn</b>, startup bán vé sự kiện chạy trong căn phòng 15m² ở Cầu Giấy.
+      CEO là <b>chị Linh</b>, nhiệt huyết và hay hứa với khách hơi quá tay. Người dựng hạ tầng là <b>anh Bảo</b>, một senior trầm tính, sẽ kèm bạn mấy tuần đầu.
+      Từ 30 người dùng đầu tiên đến đêm flash sale định mệnh, việc của bạn chỉ có một: giữ cho hệ thống sống.
+    </div>
+    <div class="win log"><span class="ttl">NHẬT KÝ PHIÊU LƯU</span><div id="log"></div></div>
+  </div>
+</div>
+
+<div id="game" class="hidden">
+  <div class="win" id="hud">
+    <span class="stat y" id="lvTitle"></span>
+    <span class="stat big" id="stErr"><span class="k">LỖI</span><span id="sErr">0.0%</span></span>
+    <span class="stat" id="stP99"><span class="k">p99</span><span id="sP99">0ms</span></span>
+    <span class="stat"><span class="k">TẢI</span><span id="sRps">0/s</span></span>
+    <span class="stat"><span class="k">GIỜ</span><span id="sTime">0s</span></span>
+    <span class="stat"><span class="k">VÀNG</span><span id="sCost" class="y">0G</span></span>
+    <span class="hsp"></span>
+    <span class="cmds">
+      <button class="cmd main" id="bPlay">Chạy</button>
+      <button class="cmd" id="bHint">Gợi ý</button>
+      <button class="cmd" id="bSpeed">Tốc độ 1x</button>
+      <button class="cmd" id="bReset">Làm lại</button>
+      <button class="cmd" id="bMenu">Menu</button>
+    </span>
+  </div>
+  <div id="stage">
+    <div id="prog" style="position:absolute;left:0;right:0;top:0;margin:0;z-index:2"><i></i></div>
+    <canvas id="cv"></canvas>
+    <div id="toasts"></div>
+    <div class="panel win" id="goals"></div>
+    <div class="panel win" id="chartBox"><span class="ttl">60 GIÂY QUA</span>
+      <canvas id="chart"></canvas>
+      <div class="legend"><span><i style="background:#fcfcfc"></i>tải</span><span><i style="background:#f87858"></i>% lỗi</span><span><i style="background:#fcd34d"></i>p99</span></div>
+    </div>
+    <div class="panel win hidden" id="insp"></div>
+  </div>
+  <div class="win" id="tray"></div>
+</div>
+
+<div id="dlg" class="hidden">
+  <div class="win msg" id="msg">
+    <div class="who" id="dName"></div>
+    <div class="dtext" id="dText"></div>
+    <span class="more hidden" id="dMore"></span>
+    <span class="dfoot" id="dCount"></span>
+  </div>
+</div>
+
+<div id="result" class="hidden"><div class="win rwin" id="rbox"></div></div>

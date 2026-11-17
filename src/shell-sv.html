@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>UPTIME — Một ngày làm dev ở VéXịn</title>
+<style>
+/*FONTS*/
+:root{
+  --ochre:#d9a441; --ochre-dk:#8a5a1e; --ochre-lt:#f0c870; --paper:#f1e3c2; --paper-dk:#e2cfa4;
+  --ink:#3b2a1a; --ink-mid:#6e5233; --brick:#b5523b; --brick-ink:#9a3f2b; --teal:#3f7f6a; --teal-dk:#2b5a4b;
+  --asphalt:#24252b; --lamp:#ffb547; --good:#3f8f3a; --warn:#c98a12; --bad:#a83224;
+  --font:'VT323',monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--asphalt);color:var(--ink);font-family:var(--font);font-size:22px;line-height:1.25;-webkit-font-smoothing:none;user-select:none}
+::selection{background:var(--ochre);color:var(--ink)}
+button{font-family:inherit;font-size:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+.hidden{display:none!important}
+canvas.px{image-rendering:pixelated}
+
+/* Khung kiểu Stardew, chất liệu phố: viền vữa vàng ochre, lòng giấy */
+.frame{background:var(--paper);border:4px solid var(--ochre-dk);box-shadow:inset 0 0 0 3px var(--ochre),inset 0 0 0 5px var(--ochre-dk),0 6px 0 rgba(0,0,0,.28);
+  padding:12px 16px;text-shadow:.6px 0 0 currentColor;color:var(--ink)}
+.frame h2,.frame h3{margin:0 0 4px;font-weight:400;font-size:24px;color:var(--ink);text-shadow:1px 0 0 currentColor}
+.btn{background:var(--ochre);color:var(--ink);border:3px solid var(--ochre-dk);padding:4px 14px 6px;box-shadow:inset 0 3px 0 var(--ochre-lt),inset 0 -4px 0 #b07a26;text-shadow:1px 0 0 currentColor;white-space:nowrap}
+.btn:hover{background:var(--ochre-lt)}
+.btn:active{transform:translateY(2px);box-shadow:inset 0 2px 0 #b07a26}
+.btn.go{background:#6fae5a;border-color:#2f5a24;box-shadow:inset 0 3px 0 #9fd884,inset 0 -4px 0 #3f7a30}
+.btn.sm{font-size:19px;padding:2px 10px 4px}
+.dim{color:var(--ink-mid)} .good{color:var(--good)} .warn{color:var(--warn)} .bad{color:var(--bad)}
+
+/* ---------- TITLE ---------- */
+#title{position:fixed;inset:0;overflow:auto}
+#street{position:fixed;inset:0;width:100%;height:100%;image-rendering:pixelated;z-index:0}
+.twrap{position:relative;z-index:1;max-width:880px;margin:0 auto;padding:40px 22px 50px}
+.logo{margin:0;text-align:center;font-weight:400;font-size:clamp(84px,14vw,148px);line-height:.85;color:var(--paper);
+  text-shadow:4px 0 0 var(--paper),4px 4px 0 var(--brick),8px 8px 0 #4a1d14}
+.sub{text-align:center;color:var(--lamp);font-size:30px;margin:12px 0 26px;text-shadow:1px 0 0 currentColor,2px 2px 0 #000}
+.prologue{font-size:22px;line-height:1.35}
+.prologue b{font-weight:400;color:var(--brick-ink)}
+.cal{margin-top:24px}
+.days{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:8px}
+.day{background:var(--paper-dk);border:3px solid var(--ochre-dk);padding:8px 10px 10px;text-align:left;min-height:118px;display:flex;flex-direction:column;gap:2px;color:var(--ink)}
+.day:hover:not(:disabled){background:#f7ecd2;border-color:var(--brick)}
+.day .dn{display:flex;justify-content:space-between;align-items:center;font-size:20px;color:var(--ink-mid)}
+.day .tt{font-size:25px;line-height:1.05;text-shadow:1px 0 0 currentColor}
+.day .ds{font-size:18px;line-height:1.1;color:var(--ink-mid)}
+.day:disabled{opacity:.5;cursor:not-allowed}
+.stars{display:inline-flex;gap:3px;vertical-align:middle}
+.stars img{image-rendering:pixelated;width:18px;height:18px}
+
+/* ---------- GAME ---------- */
+#game{position:fixed;inset:0;background:#15161a}
+#cv{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+.hudbox{position:absolute;z-index:3}
+#clock{right:12px;top:12px;width:236px;padding:8px 12px}
+#clock .d{display:flex;justify-content:space-between;font-size:20px}
+#clock .t{font-size:40px;line-height:1;text-align:center;margin:2px 0}
+#clock .m{display:flex;justify-content:space-between;font-size:20px;border-top:2px solid var(--paper-dk);padding-top:4px}
+#clock .ctl{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+#left{left:12px;top:12px;width:284px;padding:8px 12px}
+#left .q{display:flex;gap:8px;align-items:flex-start;font-size:20px;line-height:1.15;margin:3px 0}
+#left .q i{flex:0 0 14px;height:14px;margin-top:4px;border:2px solid var(--ink-mid);background:var(--paper)}
+#left .q.done i{background:var(--good);border-color:var(--good)}
+#left .q.done span{color:var(--ink-mid);text-decoration:line-through}
+#left .row{display:flex;justify-content:space-between;font-size:21px}
+#left .big{font-size:30px}
+#chart{width:100%;height:64px;display:block;image-rendering:pixelated;background:var(--paper-dk);margin-top:4px}
+.keys{font-size:17px;color:var(--ink-mid);margin-top:6px;line-height:1.1}
+#sandboxCtl label{display:block;font-size:19px}
+#sandboxCtl input{width:100%;accent-color:var(--brick)}
+
+#hotbar{left:50%;bottom:12px;transform:translateX(-50%);display:flex;gap:4px;padding:6px}
+.slot{position:relative;width:58px;height:58px;background:var(--paper-dk);border:3px solid var(--ochre-dk);display:grid;place-items:center;padding:0}
+.slot canvas{image-rendering:pixelated;width:40px;height:40px}
+.slot .k{position:absolute;left:3px;top:0;font-size:16px;color:var(--ink-mid)}
+.slot .p{position:absolute;right:3px;bottom:-1px;font-size:15px;color:var(--brick-ink);text-shadow:none}
+.slot.on{border-color:var(--bad);background:#f7ecd2;box-shadow:0 0 0 2px var(--bad)}
+.slot:disabled{opacity:.35;cursor:not-allowed}
+#tip{position:absolute;z-index:6;pointer-events:none;padding:6px 10px;font-size:19px;line-height:1.15;max-width:270px}
+#tip b{font-weight:400;font-size:21px;display:block}
+#energy{right:14px;bottom:14px;width:34px;height:170px;padding:0;display:flex;flex-direction:column;align-items:center}
+#energy .bar{flex:1;width:16px;margin:8px 0 4px;background:#3a2c1c;position:relative;border:2px solid var(--ink)}
+#energy .bar i{position:absolute;left:0;right:0;bottom:0;background:#6fd04a}
+#energy .e{font-size:20px;line-height:1;margin-bottom:6px}
+#toasts{position:absolute;left:12px;bottom:90px;z-index:5;display:flex;flex-direction:column-reverse;gap:8px;pointer-events:none;width:min(420px,70%)}
+.toast{padding:6px 12px;font-size:20px;line-height:1.15;animation:tin .2s steps(3)}
+.toast.bad{color:var(--bad)} .toast.info{color:var(--good)}
+@keyframes tin{from{opacity:0;transform:translateX(-10px)}}
+
+/* ---------- MÁY TÍNH ---------- */
+#pc{position:fixed;inset:0;display:grid;place-items:center;background:rgba(10,10,20,.55);z-index:15;padding:14px}
+.pcbox{width:min(760px,100%);max-height:calc(100vh - 28px);display:flex;flex-direction:column;padding:12px 16px}
+.pctop{display:flex;justify-content:space-between;align-items:center}
+.pctop h2{margin:0;font-weight:400;font-size:30px;text-shadow:1px 0 0 currentColor}
+.pchead{display:flex;justify-content:space-between;gap:10px;font-size:19px;color:var(--ink-mid);border-bottom:2px solid var(--paper-dk);padding:2px 0 6px;flex-wrap:wrap}
+.pchead b{font-weight:400;color:var(--ink)}
+.tabs{display:flex;gap:4px;margin:8px 0;flex-wrap:wrap}
+.tabs button{background:var(--paper-dk);border:3px solid var(--ochre-dk);padding:2px 12px 4px;font-size:20px}
+.tabs button.on{background:var(--ochre);box-shadow:inset 0 3px 0 var(--ochre-lt)}
+.pcbody{overflow:auto;padding-right:6px}
+.pcbody h4{margin:10px 0 4px;font-weight:400;font-size:22px;text-shadow:1px 0 0 currentColor}
+.pcbody p{margin:4px 0;font-size:19px}
+.card{background:#f7ecd2;border:2px solid var(--paper-dk);padding:6px 10px;margin:6px 0}
+.card .ch{display:flex;justify-content:space-between;gap:10px;font-size:22px}
+.card .ch b{font-weight:400;text-shadow:1px 0 0 currentColor}
+.card .cr{font-size:19px;line-height:1.2;margin:2px 0}
+.card .cr2{display:flex;justify-content:space-between;font-size:20px}
+.card .btn{margin-top:4px}
+.card select{font-family:inherit;font-size:18px;background:var(--paper);border:2px solid var(--ochre-dk);color:var(--ink)}
+.row2{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:8px 0}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.pbar{display:inline-block;width:110px;height:10px;background:var(--paper-dk);border:2px solid var(--ink-mid);vertical-align:middle;position:relative}
+.pbar i{position:absolute;left:0;top:0;bottom:0;background:var(--good)} .pbar i.warn{background:var(--warn)} .pbar i.bad{background:var(--bad)}
+.day.company{min-height:0;background:#e9dcb8}
+
+/* ---------- DIALOG ---------- */
+#dlg{position:fixed;inset:0;display:flex;align-items:flex-end;justify-content:center;padding:18px;z-index:20;background:rgba(10,10,20,.25)}
+.dbox{width:min(900px,100%);display:flex;gap:12px;cursor:pointer}
+.dmain{flex:1;min-height:190px;padding:16px 20px 26px;position:relative}
+.dtext{font-size:27px;line-height:1.3}
+.dtext b{font-weight:400;color:var(--brick-ink)}
+.dtext em{font-style:normal;color:var(--teal-dk);text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px}
+.dmore{position:absolute;right:16px;bottom:8px;width:16px;height:10px;background:var(--brick);clip-path:polygon(0 0,100% 0,50% 100%);animation:bob .7s steps(2) infinite}
+@keyframes bob{50%{transform:translateY(3px)}}
+.dcount{position:absolute;left:20px;bottom:4px;font-size:17px;color:var(--ink-mid)}
+.dside{flex:0 0 150px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:10px}
+.dside canvas{image-rendering:pixelated;width:96px;height:120px;background:#c8d7c0;border:3px solid var(--ochre-dk)}
+.dname{font-size:22px;text-align:center;line-height:1}
+
+#result{position:fixed;inset:0;display:grid;place-items:center;background:rgba(10,10,20,.6);z-index:25;padding:16px}
+.rbox{width:min(560px,100%)}
+.rbox h2{margin:0;font-weight:400;font-size:38px;line-height:1;text-shadow:1px 0 0 currentColor}
+.rbox .line{display:flex;justify-content:space-between;gap:10px;font-size:22px;border-bottom:2px dotted var(--paper-dk);padding:2px 0}
+.rbox .why{font-size:19px;color:var(--ink-mid);margin-top:8px;line-height:1.2}
+.rbox .rs{display:flex;gap:8px;align-items:center;margin:8px 0 10px}
+.rbox .rs img{width:30px;height:30px;image-rendering:pixelated}
+.ract{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+
+@media (max-width:820px){
+  html,body{font-size:19px}
+  .days{grid-template-columns:1fr 1fr}
+  .hudbox.frame{padding:5px 8px;border-width:3px;box-shadow:inset 0 0 0 2px var(--ochre),0 4px 0 rgba(0,0,0,.28)}
+  #left{width:158px;font-size:17px;left:6px;top:6px} #left .keys,#left h3,#chart{display:none}
+  #left .q{font-size:16px} #left .big{font-size:21px} #left .row{font-size:16px} #left .row.dim{display:none}
+  #clock{width:150px;right:6px;top:6px} #clock .t{font-size:26px} #clock .d span:last-child{display:none} #clock .d,#clock .m{font-size:16px}
+  #clock .ctl{gap:4px} #clock .btn.sm{font-size:15px;padding:1px 6px 3px}
+  .slot{width:44px;height:44px} .slot canvas{width:30px;height:30px} .slot .p{display:none}
+  #hotbar{bottom:8px} #energy{height:120px;bottom:70px;right:8px}
+  #toasts{bottom:72px}
+  .dside{flex-basis:90px} .dside canvas{width:64px;height:80px} .dtext{font-size:22px}
+}
+@media (max-width:520px){ .days{grid-template-columns:1fr} }
+@media (prefers-reduced-motion:reduce){ .toast,.dmore{animation:none} }
+</style>
+</head>
+<body>
+
+<div id="title">
+  <canvas id="street"></canvas>
+  <div class="twrap">
+    <h1 class="logo">UPTIME</h1>
+    <div class="sub">Một ngày làm dev ở VéXịn</div>
+    <div class="frame prologue">
+      Năm 2026. Bạn vừa nhận offer làm <b>dev đầu tiên</b> của <b>VéXịn</b>, startup bán vé sự kiện thuê tầng 3 một nhà ống ở Cầu Giấy.
+      CEO là <b>chị Linh</b>, nhiệt huyết và hay hứa với khách hơi quá tay. Người dựng hạ tầng là <b>anh Bảo</b>, một senior trầm tính, sẽ kèm bạn mấy tuần đầu.
+      Ban ngày bạn chuẩn bị hệ thống. Tối đến, bạn ngồi bàn trực, và khi máy nào gục thì phải tự chạy vào phòng máy cứu nó.
+    </div>
+    <div class="frame cal"><h2>Lịch làm việc</h2><div class="days" id="days"></div></div>
+  </div>
+</div>
+
+<div id="game" class="hidden">
+  <canvas id="cv"></canvas>
+  <div class="hudbox frame" id="left"></div>
+  <div class="hudbox frame" id="clock">
+    <div class="d"><span id="cDay">Ngày 1</span><span class="dim" id="cPlace">Cầu Giấy</span></div>
+    <div class="t" id="cTime">08:00</div>
+    <div class="m"><span class="dim">Ngân sách</span><span id="cMoney">0tr</span></div>
+    <div class="ctl"><button class="btn sm" id="bPause">Tạm dừng</button><button class="btn sm" id="bSpeed">1x</button><button class="btn sm" id="bReset">Làm lại</button><button class="btn sm" id="bPC" onclick="openPC()">Máy tính</button><button class="btn sm" id="bMenu">Lịch</button></div>
+  </div>
+  <div class="hudbox frame" id="hotbar"></div>
+  <div class="hudbox frame" id="energy"><div class="bar"><i id="eFill"></i></div><div class="e">E</div></div>
+  <div id="toasts"></div>
+  <div class="frame hidden" id="tip"></div>
+</div>
+
+<div id="dlg" class="hidden">
+  <div class="dbox" id="dbox">
+    <div class="frame dmain"><div class="dtext" id="dText"></div><span class="dmore hidden" id="dMore"></span><span class="dcount" id="dCount"></span></div>
+    <div class="frame dside"><canvas id="dPort" width="12" height="17"></canvas><div class="dname" id="dName"></div></div>
+  </div>
+</div>
+
+<div id="pc" class="hidden"><div class="frame pcbox">
+  <div class="pctop"><h2>Máy tính · VéXịn</h2><button class="btn sm" onclick="closePC()">Đóng (Esc)</button></div>
+  <div class="pchead" id="pcHead"></div>
+  <div class="tabs"><button data-t="projects" onclick="openPC('projects')">Dự án</button><button data-t="team" onclick="openPC('team')">Nhân sự</button><button data-t="hire" onclick="openPC('hire')">Tuyển dụng</button><button data-t="office" onclick="openPC('office')">Văn phòng</button><button data-t="money" onclick="openPC('money')">Tài chính</button></div>
+  <div class="pcbody" id="pcBody"></div></div></div>
+
+<div id="result" class="hidden"><div class="frame rbox" id="rbox"></div></div>
